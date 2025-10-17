@@ -93,11 +93,16 @@ namespace KillFeed
             killFeedContainer = containerGO.AddComponent<RectTransform>();
 
             // 设置到屏幕右侧，使用百分比定位
-            var canvas = FindObjectOfType<Canvas>();
-            if (canvas != null)
+            // 查找HUDCanvas <- HUDManager
+            var canvas = FindObjectOfType<HUDManager>();
+
+            if (canvas == null)
             {
-                killFeedContainer.SetParent(canvas.transform);
+                //ERROR
+                return;
             }
+
+            killFeedContainer.SetParent(canvas.transform);
 
             // 设置锚点到右上角
             killFeedContainer.anchorMin = new Vector2(1f, 1f);
@@ -158,6 +163,11 @@ namespace KillFeed
 
         private void AddKillRecord(CharacterMainControl killer, CharacterMainControl victim)
         {
+            if (killFeedContainer == null)
+            {
+                CreateKillFeedUI();
+            }
+
             // 创建新的文本元素
             var textGO = new GameObject($"KillRecord_{Time.time}");
             var textComp = textGO.AddComponent<TextMeshProUGUI>();
