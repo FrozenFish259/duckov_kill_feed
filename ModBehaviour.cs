@@ -1,6 +1,5 @@
 ﻿using Duckov.UI;
 using Duckov.Utilities;
-using ItemStatsSystem;
 using SodaCraft.Localizations;
 using System;
 using System.Collections.Generic;
@@ -10,7 +9,6 @@ using UnityEngine;
 using UnityEngine.ProBuilder.Shapes;
 using UnityEngine.TextCore.Text;
 using UnityEngine.UI;
-using Sprite = UnityEngine.Sprite;
 
 namespace KillFeed
 {
@@ -130,7 +128,7 @@ namespace KillFeed
             }
             catch (System.Exception e)
             {
-                Debug.LogError($"加载配置文件失败: {e}");
+                Debug.LogError($"加载配置文件失败: {e}\n已保存默认配置");
                 SaveConfig(killFeedConfig);
             }
         }
