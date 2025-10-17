@@ -5,7 +5,10 @@ using SodaCraft.Localizations;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.ProBuilder.Shapes;
+using UnityEngine.TextCore.Text;
 using UnityEngine.UI;
+using Sprite = UnityEngine.Sprite;
 
 namespace KillFeed
 {
@@ -33,6 +36,13 @@ namespace KillFeed
         public static float slideInTime = 0.4f;
         public static float itemSpacing = 50f;
 
+        // KillFeed显示区域
+        public static float rightMarginPercent = 5f / 100;    // 距离右边5%
+        public static float topMarginPercent = 15f / 100;       // 距离顶部10%
+
+        //文本大小
+        public static float fontSize = 30;
+
         // 颜色配置
         public static Color playerColor = new Color(0.2f, 0.8f, 0.2f);    // 玩家绿色
         public static Color enemyColor = new Color(0.9f, 0.2f, 0.2f);     // 敌人红色
@@ -46,6 +56,7 @@ namespace KillFeed
         void Awake()
         {
             Debug.Log("KillFeed Mod Loaded!!!");
+            
             CreateKillFeedUI();
         }
 
@@ -93,11 +104,10 @@ namespace KillFeed
             killFeedContainer.anchorMax = new Vector2(1f, 1f);
             killFeedContainer.pivot = new Vector2(1f, 1f);
 
-            // 设置位置（距离右边5%，距离顶部10%）
-            killFeedContainer.anchoredPosition = new Vector2(-Screen.width * 0.05f, -Screen.height * 0.1f);
-            killFeedContainer.sizeDelta = new Vector2(Screen.width * 0.25f, Screen.height * 0.4f);
+            // 设置位置
+            killFeedContainer.anchoredPosition = new Vector2(-Screen.width * rightMarginPercent, -Screen.height * topMarginPercent);
         }
-
+            
         private void OnDead(Health _health, DamageInfo dmgInfo)
         {
             if (_health == null)
@@ -155,9 +165,9 @@ namespace KillFeed
             // 复制样式
             var templateText = GameplayDataSettings.UIStyle.TemplateTextUGUI;
             if (templateText != null)
-            {
+            {          
                 textComp.font = templateText.font;
-                textComp.fontSize = 22; // 稍微调小一点，因为要显示富文本
+                textComp.fontSize = ModBehaviour.fontSize;
                 textComp.color = defaultTextColor;
                 textComp.alignment = TextAlignmentOptions.Right;
                 textComp.richText = true; // 启用富文本
@@ -176,7 +186,7 @@ namespace KillFeed
             var rectTransform = textGO.GetComponent<RectTransform>();
             rectTransform.SetParent(killFeedContainer);
             rectTransform.localScale = Vector3.one;
-            rectTransform.sizeDelta = new Vector2(320, 35); // 稍微宽一点，因为文字可能变长
+            rectTransform.sizeDelta = new Vector2(500, 100); // 稍微宽一点
             rectTransform.anchorMin = new Vector2(1f, 1f);
             rectTransform.anchorMax = new Vector2(1f, 1f);
             rectTransform.pivot = new Vector2(1f, 1f);
@@ -226,10 +236,12 @@ namespace KillFeed
             string victimHex = ColorUtility.ToHtmlStringRGB(victimColor);
             string killedHex = ColorUtility.ToHtmlStringRGB(killedTextColor);
 
+            float iconSize = ModBehaviour.fontSize - 3;
+
             // 富文本格式
-            return $"<color=#{killerHex}><i>{killerName}</i></color> " +
-                   $"<color=#{killedHex}>⚔</color> " + // 使用剑符号替代"killed"
-                   $"<color=#{victimHex}><i>{victimName}</i></color>";
+            return $"<color=#{killerHex}>{killerName}</color> " +
+                   $"<color=#{killedHex}><i><size={iconSize}> killed </size></i></color> " +
+                   $"<color=#{victimHex}>{victimName}</color>";
         }
 
         private void UpdateAllRecordsPosition()
