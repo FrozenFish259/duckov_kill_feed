@@ -25,11 +25,11 @@ namespace KillFeed
 
         ////////////视觉效果配置////////////
         //淡入时间
-        public float fadeInTime = 0.3f;
+        public float fadeInTime = 0.4f;
         //淡出时间
-        public float fadeOutTime = 0.6f;
+        public float fadeOutTime = 0.7f;
         //records that exsist longer than this time will fade out and disapper
-        public float displayTime = 20f;
+        public float displayTime = 5f;
         //击杀记录从右侧滑入需要的时间
         public float slideInTime = 0.4f;
         //每条击杀记录的垂直间距
