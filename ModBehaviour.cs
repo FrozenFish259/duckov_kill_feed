@@ -2,6 +2,7 @@
 using Duckov.Utilities;
 using ItemStatsSystem;
 using SodaCraft.Localizations;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using TMPro;
@@ -15,20 +16,34 @@ namespace KillFeed
 {
     [System.Serializable]
     public class KillFeedConfig
-    {
+    {        
+        //文字大小
+        public float fontSize = 30f;
+
+        //是否应该显示非玩家击杀记录
         public bool shouldDisplayNonMainPlayerKill = true;
+        //最大的同时显示的击杀记录
         public int maxKillFeedRecordsNum = 6;
 
+        ////////////视觉效果配置////////////
+        //淡入时间
         public float fadeInTime = 0.3f;
-        public float displayTime = 25f;
+        //淡出时间
         public float fadeOutTime = 0.6f;
+        //records that exsist longer than this time will fade out and disapper
+        public float displayTime = 20f;
+        //击杀记录从右侧滑入需要的时间
         public float slideInTime = 0.4f;
+        //每条击杀记录的垂直间距
+        public float recordsVerticalSpacing = 50f;
+        ////////////////////////////////////
 
-        public float itemSpacing = 50f;
-
+        ////////////击杀记录位置调整: 0.0 - 1.0////////////
+        //击杀记录显示区域右margin百分比
         public float rightMarginPercent = 0.05f;
+        //击杀记录显示区域顶margin百分比
         public float topMarginPercent = 0.15f;
-        public float fontSize = 30f;
+        ///////////////////////////////////////////////////
     }
 
     public class KillFeedRecord
@@ -107,17 +122,23 @@ namespace KillFeed
 
                     // 应用配置到静态变量
                     killFeedConfig = config;
-
                 }
                 else
                 {
-                    Debug.Log("配置文件不存在，使用默认配置");
+                    SaveConfig(killFeedConfig);
                 }
             }
             catch (System.Exception e)
             {
                 Debug.LogError($"加载配置文件失败: {e}");
+                SaveConfig(killFeedConfig);
             }
+        }
+
+        private void SaveConfig(KillFeedConfig killFeedConfig)
+        {
+            string json = JsonUtility.ToJson(killFeedConfig, true);
+            File.WriteAllText(ConfigPath, json);
         }
 
         private void CreateKillFeedUI()
@@ -236,7 +257,7 @@ namespace KillFeed
             rectTransform.pivot = new Vector2(1f, 1f);
 
             // 新记录放在最底部，所以偏移量是当前记录数 * 间距
-            float verticalOffset = activeRecords.Count * killFeedConfig.itemSpacing;
+            float verticalOffset = activeRecords.Count * killFeedConfig.recordsVerticalSpacing;
 
             // 初始位置设置为屏幕外右侧
             Vector2 startPos = new Vector2(400f, -verticalOffset);
@@ -296,7 +317,7 @@ namespace KillFeed
                 var record = activeRecords[i];
 
                 // 重要修复：重新计算每个记录的垂直偏移
-                float newOffset = i * killFeedConfig.itemSpacing;
+                float newOffset = i * killFeedConfig.recordsVerticalSpacing;
                 record.targetPosition = new Vector2(0f, -newOffset);
                 record.verticalOffset = newOffset;
 
@@ -410,5 +431,6 @@ namespace KillFeed
         {
             return 1f - Mathf.Pow(1f - x, 3f);
         }
+
     }
 }
