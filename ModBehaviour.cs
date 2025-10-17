@@ -3,6 +3,7 @@ using Duckov.Utilities;
 using ItemStatsSystem;
 using SodaCraft.Localizations;
 using System.Collections.Generic;
+using System.IO;
 using TMPro;
 using UnityEngine;
 using UnityEngine.ProBuilder.Shapes;
@@ -12,6 +13,24 @@ using Sprite = UnityEngine.Sprite;
 
 namespace KillFeed
 {
+    [System.Serializable]
+    public class KillFeedConfig
+    {
+        public bool shouldDisplayNonMainPlayerKill = true;
+        public int maxKillFeedRecordsNum = 6;
+
+        public float fadeInTime = 0.3f;
+        public float displayTime = 25f;
+        public float fadeOutTime = 0.6f;
+        public float slideInTime = 0.4f;
+
+        public float itemSpacing = 50f;
+
+        public float rightMarginPercent = 0.05f;
+        public float topMarginPercent = 0.15f;
+        public float fontSize = 30f;
+    }
+
     public class KillFeedRecord
     {
         public TextMeshProUGUI textElement;
@@ -22,31 +41,19 @@ namespace KillFeed
         public Vector2 startPosition;
         public Vector2 targetPosition;
         public float verticalOffset;
-        public CharacterMainControl killer; // 新增：保存击杀者信息
-        public CharacterMainControl victim; // 新增：保存受害者信息
+        public CharacterMainControl killer;
+        public CharacterMainControl victim;
     }
 
     public class ModBehaviour : Duckov.Modding.ModBehaviour
     {
-        public static bool shouldDisplayNonMainPlayerKill = true;
-        public static int maxKillFeedRecordsNum = 6;
-        public static float fadeInTime = 0.3f;
-        public static float displayTime = 25f;
-        public static float fadeOutTime = 0.6f;
-        public static float slideInTime = 0.4f;
-        public static float itemSpacing = 50f;
+        KillFeedConfig killFeedConfig = new KillFeedConfig();
 
-        // KillFeed显示区域
-        public static float rightMarginPercent = 5f / 100;    // 距离右边5%
-        public static float topMarginPercent = 15f / 100;       // 距离顶部10%
+        private static string ConfigPath => Path.Combine(Application.streamingAssetsPath, "KillFeedModConfig.txt");
 
-        //文本大小
-        public static float fontSize = 30;
-
-        // 颜色配置
-        public static Color playerColor = new Color(0.2f, 0.8f, 0.2f);    // 玩家绿色
-        public static Color enemyColor = new Color(0.9f, 0.2f, 0.2f);     // 敌人红色
-        public static Color killedTextColor = new Color(0.8f, 0.8f, 0.8f); // "killed" 文字灰色
+        public static Color playerColor = new Color(0.2f, 0.8f, 0.2f);
+        public static Color enemyColor = new Color(0.9f, 0.2f, 0.2f);
+        public static Color killedTextColor = new Color(0.8f, 0.8f, 0.8f);
         public static Color defaultTextColor = Color.white;
 
         private Queue<KillFeedRecord> killFeedQueue = new Queue<KillFeedRecord>();
@@ -56,7 +63,10 @@ namespace KillFeed
         void Awake()
         {
             Debug.Log("KillFeed Mod Loaded!!!");
-            
+
+            // 加载配置
+            TryLoadingConfig();
+
             CreateKillFeedUI();
         }
 
@@ -86,6 +96,30 @@ namespace KillFeed
             Health.OnDead -= OnDead;
         }
 
+        private void TryLoadingConfig()
+        {
+            try
+            {
+                if (File.Exists(ConfigPath))
+                {
+                    string json = File.ReadAllText(ConfigPath);
+                    KillFeedConfig config = JsonUtility.FromJson<KillFeedConfig>(json);
+
+                    // 应用配置到静态变量
+                    killFeedConfig = config;
+
+                }
+                else
+                {
+                    Debug.Log("配置文件不存在，使用默认配置");
+                }
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"加载配置文件失败: {e}");
+            }
+        }
+
         private void CreateKillFeedUI()
         {
             // 创建容器
@@ -109,10 +143,10 @@ namespace KillFeed
             killFeedContainer.anchorMax = new Vector2(1f, 1f);
             killFeedContainer.pivot = new Vector2(1f, 1f);
 
-            // 设置位置
-            killFeedContainer.anchoredPosition = new Vector2(-Screen.width * rightMarginPercent, -Screen.height * topMarginPercent);
+            // 设置位置（使用配置的值）
+            killFeedContainer.anchoredPosition = new Vector2(-Screen.width * killFeedConfig.rightMarginPercent, -Screen.height * killFeedConfig.topMarginPercent);
         }
-            
+
         private void OnDead(Health _health, DamageInfo dmgInfo)
         {
             if (_health == null)
@@ -128,7 +162,7 @@ namespace KillFeed
                 return;
             }
 
-            if (!shouldDisplayNonMainPlayerKill && !characterKiller.IsMainCharacter)
+            if (!killFeedConfig.shouldDisplayNonMainPlayerKill && !characterKiller.IsMainCharacter)
             {
                 return;
             }
@@ -175,12 +209,12 @@ namespace KillFeed
             // 复制样式
             var templateText = GameplayDataSettings.UIStyle.TemplateTextUGUI;
             if (templateText != null)
-            {          
+            {
                 textComp.font = templateText.font;
-                textComp.fontSize = ModBehaviour.fontSize;
+                textComp.fontSize = killFeedConfig.fontSize; // 使用配置的字体大小
                 textComp.color = defaultTextColor;
                 textComp.alignment = TextAlignmentOptions.Right;
-                textComp.richText = true; // 启用富文本
+                textComp.richText = true;
             }
 
             // 设置富文本格式的击杀信息
@@ -196,13 +230,13 @@ namespace KillFeed
             var rectTransform = textGO.GetComponent<RectTransform>();
             rectTransform.SetParent(killFeedContainer);
             rectTransform.localScale = Vector3.one;
-            rectTransform.sizeDelta = new Vector2(500, 100); // 稍微宽一点
+            rectTransform.sizeDelta = new Vector2(500, 100);
             rectTransform.anchorMin = new Vector2(1f, 1f);
             rectTransform.anchorMax = new Vector2(1f, 1f);
             rectTransform.pivot = new Vector2(1f, 1f);
 
             // 新记录放在最底部，所以偏移量是当前记录数 * 间距
-            float verticalOffset = activeRecords.Count * itemSpacing;
+            float verticalOffset = activeRecords.Count * killFeedConfig.itemSpacing;
 
             // 初始位置设置为屏幕外右侧
             Vector2 startPos = new Vector2(400f, -verticalOffset);
@@ -228,7 +262,7 @@ namespace KillFeed
             activeRecords.Add(record);
 
             // 如果超过最大数量，移除最老的（第一个）
-            if (activeRecords.Count > maxKillFeedRecordsNum)
+            if (activeRecords.Count > killFeedConfig.maxKillFeedRecordsNum)
             {
                 RemoveOldestRecord();
             }
@@ -246,7 +280,7 @@ namespace KillFeed
             string victimHex = ColorUtility.ToHtmlStringRGB(victimColor);
             string killedHex = ColorUtility.ToHtmlStringRGB(killedTextColor);
 
-            float iconSize = ModBehaviour.fontSize - 3;
+            float iconSize = killFeedConfig.fontSize - 3;
 
             // 富文本格式
             return $"<color=#{killerHex}>{killerName}</color> " +
@@ -262,7 +296,7 @@ namespace KillFeed
                 var record = activeRecords[i];
 
                 // 重要修复：重新计算每个记录的垂直偏移
-                float newOffset = i * itemSpacing;
+                float newOffset = i * killFeedConfig.itemSpacing;
                 record.targetPosition = new Vector2(0f, -newOffset);
                 record.verticalOffset = newOffset;
 
@@ -314,9 +348,9 @@ namespace KillFeed
                 record.targetPosition = new Vector2(0f, -record.verticalOffset);
 
                 // 滑动阶段
-                if (timeSinceCreation < slideInTime)
+                if (timeSinceCreation < killFeedConfig.slideInTime)
                 {
-                    record.slideProgress = Mathf.Clamp01(timeSinceCreation / slideInTime);
+                    record.slideProgress = Mathf.Clamp01(timeSinceCreation / killFeedConfig.slideInTime);
                     float easedProgress = EaseOutCubic(record.slideProgress);
 
                     Vector2 currentPosition = Vector2.Lerp(
@@ -334,19 +368,19 @@ namespace KillFeed
                 }
 
                 // 淡入阶段
-                if (timeSinceCreation < fadeInTime)
+                if (timeSinceCreation < killFeedConfig.fadeInTime)
                 {
-                    record.currentAlpha = Mathf.Clamp01(timeSinceCreation / fadeInTime);
+                    record.currentAlpha = Mathf.Clamp01(timeSinceCreation / killFeedConfig.fadeInTime);
                 }
                 // 显示阶段
-                else if (timeSinceCreation < fadeInTime + displayTime)
+                else if (timeSinceCreation < killFeedConfig.fadeInTime + killFeedConfig.displayTime)
                 {
                     record.currentAlpha = 1f;
                 }
                 // 淡出阶段
-                else if (timeSinceCreation < fadeInTime + displayTime + fadeOutTime)
+                else if (timeSinceCreation < killFeedConfig.fadeInTime + killFeedConfig.displayTime + killFeedConfig.fadeOutTime)
                 {
-                    float fadeOutProgress = (timeSinceCreation - fadeInTime - displayTime) / fadeOutTime;
+                    float fadeOutProgress = (timeSinceCreation - killFeedConfig.fadeInTime - killFeedConfig.displayTime) / killFeedConfig.fadeOutTime;
                     record.currentAlpha = Mathf.Clamp01(1f - fadeOutProgress);
                     record.isFadingOut = true;
                 }
@@ -375,11 +409,6 @@ namespace KillFeed
         private float EaseOutCubic(float x)
         {
             return 1f - Mathf.Pow(1f - x, 3f);
-        }
-
-        private void FixedUpdate()
-        {
-            // 可以留空或移除
         }
     }
 }
