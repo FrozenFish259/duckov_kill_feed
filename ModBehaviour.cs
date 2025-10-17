@@ -18,7 +18,7 @@ namespace KillFeed
         public float slideProgress = 0f;
         public Vector2 startPosition;
         public Vector2 targetPosition;
-        public float verticalOffset; // 新增：垂直偏移量
+        public float verticalOffset;
     }
 
     public class ModBehaviour : Duckov.Modding.ModBehaviour
@@ -29,7 +29,7 @@ namespace KillFeed
         public static float displayTime = 25f;
         public static float fadeOutTime = 0.6f;
         public static float slideInTime = 0.4f;
-        public static float itemSpacing = 50f; // 新增：项垂直间距
+        public static float itemSpacing = 50f;
 
         private Queue<KillFeedRecord> killFeedQueue = new Queue<KillFeedRecord>();
         private List<KillFeedRecord> activeRecords = new List<KillFeedRecord>();
@@ -88,8 +88,6 @@ namespace KillFeed
             // 设置位置（距离右边5%，距离顶部10%）
             killFeedContainer.anchoredPosition = new Vector2(-Screen.width * 0.05f, -Screen.height * 0.1f);
             killFeedContainer.sizeDelta = new Vector2(Screen.width * 0.25f, Screen.height * 0.4f);
-
-            // 移除 VerticalLayoutGroup，改为手动布局
         }
 
         private void OnDead(Health _health, DamageInfo dmgInfo)
@@ -159,12 +157,8 @@ namespace KillFeed
             rectTransform.anchorMax = new Vector2(1f, 1f);
             rectTransform.pivot = new Vector2(1f, 1f);
 
-            // 计算垂直偏移量（新记录在最顶部）
-            float verticalOffset = 0f;
-            foreach (var _ in activeRecords)
-            {
-                verticalOffset += itemSpacing;
-            }
+            // 计算垂直偏移量（新记录在最底部）
+            float verticalOffset = (activeRecords.Count) * itemSpacing;
 
             // 初始位置设置为屏幕外右侧
             Vector2 startPos = new Vector2(400f, -verticalOffset);
@@ -184,13 +178,10 @@ namespace KillFeed
                 verticalOffset = verticalOffset
             };
 
-            // 添加到活动记录列表的开头（最新的在最前面）
-            activeRecords.Insert(0, record);
+            // 添加到活动记录列表的末尾（新的在最下面）
+            activeRecords.Add(record);
 
-            // 更新所有现有记录的位置（向下移动）
-            UpdateAllRecordsPosition();
-
-            // 如果超过最大数量，移除最老的
+            // 如果超过最大数量，移除最老的（第一个）
             if (activeRecords.Count > maxKillFeedRecordsNum)
             {
                 RemoveOldestRecord();
@@ -199,11 +190,12 @@ namespace KillFeed
 
         private void UpdateAllRecordsPosition()
         {
-            // 更新所有记录的目标位置
+            // 更新所有记录的目标位置（从下到上排列）
             for (int i = 0; i < activeRecords.Count; i++)
             {
                 var record = activeRecords[i];
-                float newOffset = i * itemSpacing;
+                // 最老的记录在顶部（偏移最小），最新的在底部（偏移最大）
+                float newOffset = (activeRecords.Count - 1 - i) * itemSpacing;
                 record.targetPosition = new Vector2(0f, -newOffset);
                 record.verticalOffset = newOffset;
 
@@ -219,8 +211,9 @@ namespace KillFeed
         {
             if (activeRecords.Count > 0)
             {
-                var oldestRecord = activeRecords[activeRecords.Count - 1];
-                activeRecords.RemoveAt(activeRecords.Count - 1);
+                // 移除最老的记录（列表中的第一个）
+                var oldestRecord = activeRecords[0];
+                activeRecords.RemoveAt(0);
                 if (oldestRecord.textElement != null)
                     Destroy(oldestRecord.textElement.gameObject);
 
@@ -249,7 +242,7 @@ namespace KillFeed
                     continue;
                 }
 
-                // 更新目标位置（因为其他记录可能已经移动）
+                // 更新目标位置
                 record.targetPosition = new Vector2(0f, -record.verticalOffset);
 
                 // 滑动阶段
