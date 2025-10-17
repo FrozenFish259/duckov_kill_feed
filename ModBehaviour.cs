@@ -157,8 +157,8 @@ namespace KillFeed
             rectTransform.anchorMax = new Vector2(1f, 1f);
             rectTransform.pivot = new Vector2(1f, 1f);
 
-            // 计算垂直偏移量（新记录在最底部）
-            float verticalOffset = (activeRecords.Count) * itemSpacing;
+            // 新记录放在最底部，所以偏移量是当前记录数 * 间距
+            float verticalOffset = activeRecords.Count * itemSpacing;
 
             // 初始位置设置为屏幕外右侧
             Vector2 startPos = new Vector2(400f, -verticalOffset);
@@ -186,16 +186,24 @@ namespace KillFeed
             {
                 RemoveOldestRecord();
             }
+            else
+            {
+                // 只有不超过最大数量时才需要更新位置
+                // 因为RemoveOldestRecord内部会调用UpdateAllRecordsPosition
+                UpdateAllRecordsPosition();
+            }
         }
 
         private void UpdateAllRecordsPosition()
         {
-            // 更新所有记录的目标位置（从下到上排列）
+            // 重新计算所有记录的位置
             for (int i = 0; i < activeRecords.Count; i++)
             {
                 var record = activeRecords[i];
-                // 最老的记录在顶部（偏移最小），最新的在底部（偏移最大）
-                float newOffset = (activeRecords.Count - 1 - i) * itemSpacing;
+
+                // 重要修复：重新计算每个记录的垂直偏移
+                // 最老的记录在顶部（偏移0），最新的在底部（偏移最大）
+                float newOffset = i * itemSpacing;
                 record.targetPosition = new Vector2(0f, -newOffset);
                 record.verticalOffset = newOffset;
 
@@ -217,7 +225,7 @@ namespace KillFeed
                 if (oldestRecord.textElement != null)
                     Destroy(oldestRecord.textElement.gameObject);
 
-                // 移除后更新其他记录的位置
+                // 移除后重新计算所有记录的位置
                 UpdateAllRecordsPosition();
             }
         }
@@ -239,10 +247,11 @@ namespace KillFeed
                 if (record.textElement == null)
                 {
                     activeRecords.RemoveAt(i);
+                    UpdateAllRecordsPosition(); // 移除后更新位置
                     continue;
                 }
 
-                // 更新目标位置
+                // 更新目标位置（使用当前计算好的偏移）
                 record.targetPosition = new Vector2(0f, -record.verticalOffset);
 
                 // 滑动阶段
@@ -300,7 +309,7 @@ namespace KillFeed
                     Destroy(record.textElement.gameObject);
                     activeRecords.RemoveAt(i);
 
-                    // 移除后更新其他记录的位置
+                    // 重要：移除记录后立即更新所有位置
                     UpdateAllRecordsPosition();
                 }
             }
