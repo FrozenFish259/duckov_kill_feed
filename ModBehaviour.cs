@@ -19,6 +19,8 @@ namespace KillFeed
         public Vector2 startPosition;
         public Vector2 targetPosition;
         public float verticalOffset;
+        public CharacterMainControl killer; // 新增：保存击杀者信息
+        public CharacterMainControl victim; // 新增：保存受害者信息
     }
 
     public class ModBehaviour : Duckov.Modding.ModBehaviour
@@ -30,6 +32,12 @@ namespace KillFeed
         public static float fadeOutTime = 0.6f;
         public static float slideInTime = 0.4f;
         public static float itemSpacing = 50f;
+
+        // 颜色配置
+        public static Color playerColor = new Color(0.2f, 0.8f, 0.2f);    // 玩家绿色
+        public static Color enemyColor = new Color(0.9f, 0.2f, 0.2f);     // 敌人红色
+        public static Color killedTextColor = new Color(0.8f, 0.8f, 0.8f); // "killed" 文字灰色
+        public static Color defaultTextColor = Color.white;
 
         private Queue<KillFeedRecord> killFeedQueue = new Queue<KillFeedRecord>();
         private List<KillFeedRecord> activeRecords = new List<KillFeedRecord>();
@@ -110,10 +118,7 @@ namespace KillFeed
                 return;
             }
 
-            string killerName = GetCharacterName(characterKiller);
-            string victimName = GetCharacterName(characterVictim);
-
-            AddKillRecord(killerName, victimName);
+            AddKillRecord(characterKiller, characterVictim);
         }
 
         private string GetCharacterName(CharacterMainControl character)
@@ -129,7 +134,19 @@ namespace KillFeed
             return "Unknown";
         }
 
-        private void AddKillRecord(string killer, string victim)
+        private Color GetCharacterColor(CharacterMainControl character)
+        {
+            if (character.IsMainCharacter)
+            {
+                return playerColor;
+            }
+            else
+            {
+                return enemyColor;
+            }
+        }
+
+        private void AddKillRecord(CharacterMainControl killer, CharacterMainControl victim)
         {
             // 创建新的文本元素
             var textGO = new GameObject($"KillRecord_{Time.time}");
@@ -140,19 +157,26 @@ namespace KillFeed
             if (templateText != null)
             {
                 textComp.font = templateText.font;
-                textComp.fontSize = 24;
-                textComp.color = Color.white;
+                textComp.fontSize = 22; // 稍微调小一点，因为要显示富文本
+                textComp.color = defaultTextColor;
                 textComp.alignment = TextAlignmentOptions.Right;
+                textComp.richText = true; // 启用富文本
             }
 
-            // 设置文本
-            textComp.text = $"{killer} killed {victim}";
+            // 设置富文本格式的击杀信息
+            string killerName = GetCharacterName(killer);
+            string victimName = GetCharacterName(victim);
+            Color killerColor = GetCharacterColor(killer);
+            Color victimColor = GetCharacterColor(victim);
+
+            string formattedText = FormatKillMessage(killerName, victimName, killerColor, victimColor);
+            textComp.text = formattedText;
 
             // 设置到容器中
             var rectTransform = textGO.GetComponent<RectTransform>();
             rectTransform.SetParent(killFeedContainer);
             rectTransform.localScale = Vector3.one;
-            rectTransform.sizeDelta = new Vector2(280, 35);
+            rectTransform.sizeDelta = new Vector2(320, 35); // 稍微宽一点，因为文字可能变长
             rectTransform.anchorMin = new Vector2(1f, 1f);
             rectTransform.anchorMax = new Vector2(1f, 1f);
             rectTransform.pivot = new Vector2(1f, 1f);
@@ -175,7 +199,9 @@ namespace KillFeed
                 slideProgress = 0f,
                 startPosition = startPos,
                 targetPosition = targetPos,
-                verticalOffset = verticalOffset
+                verticalOffset = verticalOffset,
+                killer = killer,
+                victim = victim
             };
 
             // 添加到活动记录列表的末尾（新的在最下面）
@@ -189,9 +215,21 @@ namespace KillFeed
             else
             {
                 // 只有不超过最大数量时才需要更新位置
-                // 因为RemoveOldestRecord内部会调用UpdateAllRecordsPosition
                 UpdateAllRecordsPosition();
             }
+        }
+
+        private string FormatKillMessage(string killerName, string victimName, Color killerColor, Color victimColor)
+        {
+            // 将颜色转换为16进制
+            string killerHex = ColorUtility.ToHtmlStringRGB(killerColor);
+            string victimHex = ColorUtility.ToHtmlStringRGB(victimColor);
+            string killedHex = ColorUtility.ToHtmlStringRGB(killedTextColor);
+
+            // 富文本格式
+            return $"<color=#{killerHex}><i>{killerName}</i></color> " +
+                   $"<color=#{killedHex}>⚔</color> " + // 使用剑符号替代"killed"
+                   $"<color=#{victimHex}><i>{victimName}</i></color>";
         }
 
         private void UpdateAllRecordsPosition()
@@ -202,7 +240,6 @@ namespace KillFeed
                 var record = activeRecords[i];
 
                 // 重要修复：重新计算每个记录的垂直偏移
-                // 最老的记录在顶部（偏移0），最新的在底部（偏移最大）
                 float newOffset = i * itemSpacing;
                 record.targetPosition = new Vector2(0f, -newOffset);
                 record.verticalOffset = newOffset;
@@ -247,7 +284,7 @@ namespace KillFeed
                 if (record.textElement == null)
                 {
                     activeRecords.RemoveAt(i);
-                    UpdateAllRecordsPosition(); // 移除后更新位置
+                    UpdateAllRecordsPosition();
                     continue;
                 }
 
@@ -298,7 +335,7 @@ namespace KillFeed
                     record.isFadingOut = true;
                 }
 
-                // 应用透明度
+                // 应用透明度到整个文本元素
                 Color color = record.textElement.color;
                 color.a = record.currentAlpha;
                 record.textElement.color = color;
@@ -308,8 +345,6 @@ namespace KillFeed
                 {
                     Destroy(record.textElement.gameObject);
                     activeRecords.RemoveAt(i);
-
-                    // 重要：移除记录后立即更新所有位置
                     UpdateAllRecordsPosition();
                 }
             }
