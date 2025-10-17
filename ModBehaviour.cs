@@ -148,7 +148,7 @@ namespace KillFeed
             }
 
             // 设置文本
-            textComp.text = $"{killer} 击杀了 {victim}";
+            textComp.text = $"{killer} killed {victim}";
 
             // 设置到容器中
             var rectTransform = textGO.GetComponent<RectTransform>();
@@ -161,7 +161,7 @@ namespace KillFeed
 
             // 计算垂直偏移量（新记录在最顶部）
             float verticalOffset = 0f;
-            foreach (var record in activeRecords)
+            foreach (var _ in activeRecords)
             {
                 verticalOffset += itemSpacing;
             }
