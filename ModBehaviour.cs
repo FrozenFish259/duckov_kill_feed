@@ -344,7 +344,11 @@ namespace KillFeed
 
         private void Update()
         {
-            UpdateRecordsAnimation();
+            // 优化: 只在有活动记录时才执行动画更新
+            if (activeRecords.Count > 0)
+            {
+                UpdateRecordsAnimation();
+            }
         }
 
         private void UpdateRecordsAnimation()
