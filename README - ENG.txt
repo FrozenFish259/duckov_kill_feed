@@ -5,7 +5,6 @@ When kill events occur in the game, the mod displays kill information in the top
 [/quote]
 
 [h2]Configuration File Location[/h2]
-
 The config file is located in the game's [i]StreamingAssets[/i] folder:
 [quote]
 ..\Escape from Duckov\Duckov_Data\StreamingAssets\KillFeedModConfig.txt
@@ -13,15 +12,16 @@ The config file is located in the game's [i]StreamingAssets[/i] folder:
 
 [h2]Basic Settings[/h2]
 [i]fontSize[/i]: Kill feed text font size
+
 [i]shouldDisplayNonMainPlayerKill[/i]: Whether to display non-player kill records (true=show all kills, false=only show player kills)
+
 [i]maxKillFeedRecordsNum[/i]: Maximum number of kill records displayed simultaneously
+
 [i]weaponIconSize[/i]: Weapon icon size
 [i]weaponIconSpacing[/i]: Spacing between weapon icon and text
 
 [h2]Visual Effects Configuration[/h2]
-
 [i]fadeInTime[/i]: Fade-in duration (seconds)
-
 [i]fadeOutTime[/i]: Fade-out duration (seconds)
 
 [i]displayTime[/i]: Kill record display time (seconds), records older than this will start fading out
