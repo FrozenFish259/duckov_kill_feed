@@ -11,6 +11,10 @@
 
 `maxKillFeedRecordsNum`: 同时显示的最大击杀记录数量
 
+`weaponIconSize`: 武器图标大小
+
+`weaponIconSpacing`: 武器图标和文字间距
+
 ### 视觉效果配置
 `fadeInTime`: 淡入时间（秒）
 
@@ -51,6 +55,10 @@ The config file is located in the game's `StreamingAssets` folder:
 `shouldDisplayNonMainPlayerKill`: Whether to display non-player kill records (true=show all kills, false=only show player kills)
 
 `maxKillFeedRecordsNum`: Maximum number of kill records displayed simultaneously
+
+`weaponIconSize`: Weapon icon size
+
+`weaponIconSpacing`: Spacing between weapon icon and text
 
 ## Visual Effects Configuration
 `fadeInTime`: Fade-in duration (seconds)

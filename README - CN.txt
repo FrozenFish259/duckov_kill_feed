@@ -10,15 +10,13 @@
 [/quote]
 
 [h3]基本设置[/h3]
-
 [i]fontSize[/i]: 击杀信息字体大小
-
 [i]shouldDisplayNonMainPlayerKill[/i]: 是否显示非玩家击杀记录（true=显示所有击杀，false=只显示玩家击杀）
-
 [i]maxKillFeedRecordsNum[/i]: 同时显示的最大击杀记录数量
+[i]weaponIconSize[/i]: 武器图标大小
+[i]weaponIconSpacing[/i]: 武器图标和文字间距
 
 [h3]视觉效果配置[/h3]
-
 [i]fadeInTime[/i]: 淡入时间（秒）
 
 [i]fadeOutTime[/i]: 淡出时间（秒）

@@ -12,12 +12,11 @@ The config file is located in the game's [i]StreamingAssets[/i] folder:
 [/quote]
 
 [h2]Basic Settings[/h2]
-
 [i]fontSize[/i]: Kill feed text font size
-
 [i]shouldDisplayNonMainPlayerKill[/i]: Whether to display non-player kill records (true=show all kills, false=only show player kills)
-
 [i]maxKillFeedRecordsNum[/i]: Maximum number of kill records displayed simultaneously
+[i]weaponIconSize[/i]: Weapon icon size
+[i]weaponIconSpacing[/i]: Spacing between weapon icon and text
 
 [h2]Visual Effects Configuration[/h2]
 
