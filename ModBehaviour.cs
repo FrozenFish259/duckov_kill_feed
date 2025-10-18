@@ -1,5 +1,6 @@
 ﻿using Duckov.UI;
 using Duckov.Utilities;
+using ItemStatsSystem;
 using SodaCraft.Localizations;
 using System;
 using System.Collections.Generic;
@@ -9,12 +10,13 @@ using UnityEngine;
 using UnityEngine.ProBuilder.Shapes;
 using UnityEngine.TextCore.Text;
 using UnityEngine.UI;
+using Sprite = UnityEngine.Sprite;
 
 namespace KillFeed
 {
     [System.Serializable]
     public class KillFeedConfig
-    {        
+    {
         //文字大小
         public float fontSize = 30f;
 
@@ -45,11 +47,17 @@ namespace KillFeed
 
         //自定义显示名称
         public string myName = "";
+
+        //武器图标配置
+        public float weaponIconSize = 24f; // 武器图标大小
     }
 
     public class KillFeedRecord
     {
-        public TextMeshProUGUI textElement;
+        public GameObject container; // 容器对象
+        public TextMeshProUGUI killerText;
+        public Image weaponIcon;
+        public TextMeshProUGUI victimText;
         public float createTime;
         public bool isFadingOut = false;
         public float currentAlpha = 0f;
@@ -69,7 +77,7 @@ namespace KillFeed
 
         public static Color playerColor = new Color(0.2f, 0.8f, 0.2f);
         public static Color enemyColor = new Color(0.9f, 0.2f, 0.2f);
-        public static Color killedTextColor = new Color(0.8f, 0.8f, 0.8f);
+        public static Color weaponIconColor = new Color(0.8f, 0.8f, 0.8f);
         public static Color defaultTextColor = Color.white;
 
         private Queue<KillFeedRecord> killFeedQueue = new Queue<KillFeedRecord>();
@@ -90,13 +98,13 @@ namespace KillFeed
         {
             foreach (var record in activeRecords)
             {
-                if (record.textElement != null)
-                    Destroy(record.textElement.gameObject);
+                if (record.container != null)
+                    Destroy(record.container);
             }
             foreach (var record in killFeedQueue)
             {
-                if (record.textElement != null)
-                    Destroy(record.textElement.gameObject);
+                if (record.container != null)
+                    Destroy(record.container);
             }
             if (killFeedContainer != null)
                 Destroy(killFeedContainer.gameObject);
@@ -187,14 +195,22 @@ namespace KillFeed
                 return;
             }
 
-            AddKillRecord(characterKiller, characterVictim);
+            //获取击杀用的武器图标
+            Sprite weaponSprite = null;
+            Item itemKilledWith = ItemAssetsCollection.GetPrefab(dmgInfo.fromWeaponItemID);
+            if (itemKilledWith != null)
+            {
+                weaponSprite = itemKilledWith.Icon;
+            }
+
+            AddKillRecord(characterKiller, characterVictim, weaponSprite);
         }
 
         private string GetCharacterName(CharacterMainControl character)
         {
             if (character.IsMainCharacter)
             {
-                if(killFeedConfig.myName == "")
+                if (killFeedConfig.myName == "")
                 {
                     return "DeathReason_Self".ToPlainText();
                 }
@@ -202,7 +218,7 @@ namespace KillFeed
                 {
                     return killFeedConfig.myName;
                 }
-                
+
             }
             else if (character.characterPreset != null)
             {
@@ -223,45 +239,80 @@ namespace KillFeed
             }
         }
 
-        private void AddKillRecord(CharacterMainControl killer, CharacterMainControl victim)
+        private void AddKillRecord(CharacterMainControl killer, CharacterMainControl victim, Sprite weaponSprite)
         {
             if (killFeedContainer == null)
             {
                 CreateKillFeedUI();
             }
 
-            // 创建新的文本元素
-            var textGO = new GameObject($"KillRecord_{Time.time}");
-            var textComp = textGO.AddComponent<TextMeshProUGUI>();
+            // 创建容器对象
+            var containerGO = new GameObject($"KillRecord_{Time.time}");
+            var containerRect = containerGO.AddComponent<RectTransform>();
 
-            // 复制样式
+            // 设置水平布局
+            var horizontalLayout = containerGO.AddComponent<HorizontalLayoutGroup>();
+            horizontalLayout.childAlignment = TextAnchor.MiddleRight;
+            horizontalLayout.spacing = 8f;
+            horizontalLayout.childControlWidth = false;
+            horizontalLayout.childControlHeight = false;
+
+            // 设置到容器中
+            containerRect.SetParent(killFeedContainer);
+            containerRect.localScale = Vector3.one;
+            containerRect.sizeDelta = new Vector2(500, killFeedConfig.fontSize + 10);
+            containerRect.anchorMin = new Vector2(1f, 1f);
+            containerRect.anchorMax = new Vector2(1f, 1f);
+            containerRect.pivot = new Vector2(1f, 1f);
+
+            // 1. 创建击杀者文本
+            var killerTextGO = new GameObject("KillerText");
+            var killerTextComp = killerTextGO.AddComponent<TextMeshProUGUI>();
+            var killerRect = killerTextGO.GetComponent<RectTransform>();
+            killerRect.SetParent(containerRect);
+
+            // 设置击杀者文本样式
             var templateText = GameplayDataSettings.UIStyle.TemplateTextUGUI;
             if (templateText != null)
             {
-                textComp.font = templateText.font;
-                textComp.fontSize = killFeedConfig.fontSize; // 使用配置的字体大小
-                textComp.color = defaultTextColor;
-                textComp.alignment = TextAlignmentOptions.Right;
-                textComp.richText = true;
+                killerTextComp.font = templateText.font;
+                killerTextComp.fontSize = killFeedConfig.fontSize;
+                killerTextComp.color = GetCharacterColor(killer);
+                killerTextComp.alignment = TextAlignmentOptions.Right;
             }
+            killerTextComp.text = GetCharacterName(killer);
+            killerRect.sizeDelta = new Vector2(180, killFeedConfig.fontSize + 10);
 
-            // 设置富文本格式的击杀信息
-            string killerName = GetCharacterName(killer);
-            string victimName = GetCharacterName(victim);
-            Color killerColor = GetCharacterColor(killer);
-            Color victimColor = GetCharacterColor(victim);
+            // 2. 创建武器图标
+            var weaponIconGO = new GameObject("WeaponIcon");
+            var weaponIconComp = weaponIconGO.AddComponent<Image>();
+            var weaponIconRect = weaponIconGO.GetComponent<RectTransform>();
+            weaponIconRect.SetParent(containerRect);
+            weaponIconRect.sizeDelta = new Vector2(killFeedConfig.weaponIconSize, killFeedConfig.weaponIconSize);
 
-            string formattedText = FormatKillMessage(killerName, victimName, killerColor, victimColor);
-            textComp.text = formattedText;
+            // 设置武器图标
+            if (weaponSprite != null)
+            {
+                weaponIconComp.sprite = weaponSprite;
+            }
+            weaponIconComp.color = weaponIconColor;
 
-            // 设置到容器中
-            var rectTransform = textGO.GetComponent<RectTransform>();
-            rectTransform.SetParent(killFeedContainer);
-            rectTransform.localScale = Vector3.one;
-            rectTransform.sizeDelta = new Vector2(500, 100);
-            rectTransform.anchorMin = new Vector2(1f, 1f);
-            rectTransform.anchorMax = new Vector2(1f, 1f);
-            rectTransform.pivot = new Vector2(1f, 1f);
+            // 3. 创建受害者文本
+            var victimTextGO = new GameObject("VictimText");
+            var victimTextComp = victimTextGO.AddComponent<TextMeshProUGUI>();
+            var victimRect = victimTextGO.GetComponent<RectTransform>();
+            victimRect.SetParent(containerRect);
+
+            // 设置受害者文本样式
+            if (templateText != null)
+            {
+                victimTextComp.font = templateText.font;
+                victimTextComp.fontSize = killFeedConfig.fontSize;
+                victimTextComp.color = GetCharacterColor(victim);
+                victimTextComp.alignment = TextAlignmentOptions.Left;
+            }
+            victimTextComp.text = GetCharacterName(victim);
+            victimRect.sizeDelta = new Vector2(180, killFeedConfig.fontSize + 10);
 
             // 新记录放在最底部，所以偏移量是当前记录数 * 间距
             float verticalOffset = activeRecords.Count * killFeedConfig.recordsVerticalSpacing;
@@ -270,12 +321,15 @@ namespace KillFeed
             Vector2 startPos = new Vector2(400f, -verticalOffset);
             Vector2 targetPos = new Vector2(0f, -verticalOffset);
 
-            rectTransform.anchoredPosition = startPos;
+            containerRect.anchoredPosition = startPos;
 
             // 创建记录
             var record = new KillFeedRecord
             {
-                textElement = textComp,
+                container = containerGO,
+                killerText = killerTextComp,
+                weaponIcon = weaponIconComp,
+                victimText = victimTextComp,
                 createTime = Time.time,
                 currentAlpha = 0f,
                 slideProgress = 0f,
@@ -285,6 +339,9 @@ namespace KillFeed
                 killer = killer,
                 victim = victim
             };
+
+            // 设置初始透明度
+            SetRecordAlpha(record, 0f);
 
             // 添加到活动记录列表的末尾（新的在最下面）
             activeRecords.Add(record);
@@ -301,19 +358,16 @@ namespace KillFeed
             }
         }
 
-        private string FormatKillMessage(string killerName, string victimName, Color killerColor, Color victimColor)
+        private void SetRecordAlpha(KillFeedRecord record, float alpha)
         {
-            // 将颜色转换为16进制
-            string killerHex = ColorUtility.ToHtmlStringRGB(killerColor);
-            string victimHex = ColorUtility.ToHtmlStringRGB(victimColor);
-            string killedHex = ColorUtility.ToHtmlStringRGB(killedTextColor);
+            if (record.killerText != null)
+                record.killerText.color = new Color(record.killerText.color.r, record.killerText.color.g, record.killerText.color.b, alpha);
 
-            float iconSize = killFeedConfig.fontSize - 3;
+            if (record.weaponIcon != null)
+                record.weaponIcon.color = new Color(record.weaponIcon.color.r, record.weaponIcon.color.g, record.weaponIcon.color.b, alpha);
 
-            // 富文本格式
-            return $"<color=#{killerHex}>{killerName}</color> " +
-                   $"<color=#{killedHex}><i><size={iconSize}> killed </size></i></color> " +
-                   $"<color=#{victimHex}>{victimName}</color>";
+            if (record.victimText != null)
+                record.victimText.color = new Color(record.victimText.color.r, record.victimText.color.g, record.victimText.color.b, alpha);
         }
 
         private void UpdateAllRecordsPosition()
@@ -329,9 +383,9 @@ namespace KillFeed
                 record.verticalOffset = newOffset;
 
                 // 如果记录已经完成滑动，直接设置到新位置
-                if (record.slideProgress >= 1f)
+                if (record.slideProgress >= 1f && record.container != null)
                 {
-                    record.textElement.rectTransform.anchoredPosition = record.targetPosition;
+                    record.container.GetComponent<RectTransform>().anchoredPosition = record.targetPosition;
                 }
             }
         }
@@ -343,8 +397,8 @@ namespace KillFeed
                 // 移除最老的记录（列表中的第一个）
                 var oldestRecord = activeRecords[0];
                 activeRecords.RemoveAt(0);
-                if (oldestRecord.textElement != null)
-                    Destroy(oldestRecord.textElement.gameObject);
+                if (oldestRecord.container != null)
+                    Destroy(oldestRecord.container);
 
                 // 移除后重新计算所有记录的位置
                 UpdateAllRecordsPosition();
@@ -369,12 +423,14 @@ namespace KillFeed
                 var record = activeRecords[i];
                 float timeSinceCreation = currentTime - record.createTime;
 
-                if (record.textElement == null)
+                if (record.container == null)
                 {
                     activeRecords.RemoveAt(i);
                     UpdateAllRecordsPosition();
                     continue;
                 }
+
+                var rectTransform = record.container.GetComponent<RectTransform>();
 
                 // 更新目标位置（使用当前计算好的偏移）
                 record.targetPosition = new Vector2(0f, -record.verticalOffset);
@@ -391,12 +447,12 @@ namespace KillFeed
                         easedProgress
                     );
 
-                    record.textElement.rectTransform.anchoredPosition = currentPosition;
+                    rectTransform.anchoredPosition = currentPosition;
                 }
                 else
                 {
                     record.slideProgress = 1f;
-                    record.textElement.rectTransform.anchoredPosition = record.targetPosition;
+                    rectTransform.anchoredPosition = record.targetPosition;
                 }
 
                 // 淡入阶段
@@ -423,15 +479,13 @@ namespace KillFeed
                     record.isFadingOut = true;
                 }
 
-                // 应用透明度到整个文本元素
-                Color color = record.textElement.color;
-                color.a = record.currentAlpha;
-                record.textElement.color = color;
+                // 应用透明度到所有UI元素
+                SetRecordAlpha(record, record.currentAlpha);
 
                 // 移除已经完全淡出的记录
                 if (record.isFadingOut && record.currentAlpha <= 0f)
                 {
-                    Destroy(record.textElement.gameObject);
+                    Destroy(record.container);
                     activeRecords.RemoveAt(i);
                     UpdateAllRecordsPosition();
                 }
