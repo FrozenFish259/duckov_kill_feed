@@ -27,6 +27,9 @@
 
 `topMarginPercent`: 击杀记录显示区域距离屏幕顶部的百分比
 
+## 杂项
+`myName`: 修改击杀时主玩家的显示名称, 默认是"我自己"
+
 ## 使用提示
 * 首次运行mod会自动创建配置文件
 * 修改配置后需要保存文件后重启游戏生效
@@ -64,6 +67,9 @@ The config file is located in the game's `StreamingAssets` folder:
 `rightMarginPercent`: Margin Percentage from the right edge of the screen
 
 `topMarginPercent`: Margin Percentage from the top edge of the screen
+
+## Misc
+`myName`: Change this to customize your name.
 
 ## Tips
 * Config file is automatically created on first mod run
