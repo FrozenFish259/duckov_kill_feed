@@ -1,6 +1,6 @@
 # 中文说明
 > `KillFeed`是一个为游戏添加实时击杀信息显示功能的模组。  
-> 当游戏中发生击杀事件时，模组会在屏幕右上角显示击杀者和被击杀者信息。  
+> 当游戏中发生击杀事件时，模组会在屏幕右上角显示击杀者和被击杀者信息以及击杀所用的武器图标。
 
 ### 配置文件位置
 >..\Escape from Duckov\Duckov_Data\StreamingAssets\KillFeedModConfig.txt
