@@ -50,6 +50,8 @@ namespace KillFeed
 
         //武器图标配置
         public float weaponIconSize = 24f; // 武器图标大小
+        public float weaponIconSizeRatio = 5f; // 图标大小为字体大小的相对百分比
+        public float weaponIconSpacing = 1f;     // 很小的间距，让元素靠得很近
     }
 
     public class KillFeedRecord
@@ -253,9 +255,11 @@ namespace KillFeed
             // 设置水平布局
             var horizontalLayout = containerGO.AddComponent<HorizontalLayoutGroup>();
             horizontalLayout.childAlignment = TextAnchor.MiddleRight;
-            horizontalLayout.spacing = 8f;
-            horizontalLayout.childControlWidth = false;
-            horizontalLayout.childControlHeight = false;
+            horizontalLayout.spacing = killFeedConfig.weaponIconSpacing; // 使用配置的间距
+            horizontalLayout.childControlWidth = true;  // 改为true，让布局控制宽度
+            horizontalLayout.childControlHeight = true; // 改为true，让布局控制高度
+            horizontalLayout.childForceExpandWidth = false;
+            horizontalLayout.childForceExpandHeight = false;
 
             // 设置到容器中
             containerRect.SetParent(killFeedContainer);
@@ -264,6 +268,7 @@ namespace KillFeed
             containerRect.anchorMin = new Vector2(1f, 1f);
             containerRect.anchorMax = new Vector2(1f, 1f);
             containerRect.pivot = new Vector2(1f, 1f);
+
 
             // 1. 创建击杀者文本
             var killerTextGO = new GameObject("KillerText");
@@ -281,14 +286,18 @@ namespace KillFeed
                 killerTextComp.alignment = TextAlignmentOptions.Right;
             }
             killerTextComp.text = GetCharacterName(killer);
-            killerRect.sizeDelta = new Vector2(180, killFeedConfig.fontSize + 10);
+            //killerRect.sizeDelta = new Vector2(180, killFeedConfig.fontSize + 10);
 
-            // 2. 创建武器图标
+            // 2. 创建武器图标 - 根据字体大小相对调整
             var weaponIconGO = new GameObject("WeaponIcon");
             var weaponIconComp = weaponIconGO.AddComponent<Image>();
             var weaponIconRect = weaponIconGO.GetComponent<RectTransform>();
             weaponIconRect.SetParent(containerRect);
-            weaponIconRect.sizeDelta = new Vector2(killFeedConfig.weaponIconSize, killFeedConfig.weaponIconSize);
+
+            // 根据字体大小计算图标大小
+            float weaponIconSize = killFeedConfig.fontSize * killFeedConfig.weaponIconSizeRatio;
+            weaponIconRect.sizeDelta = new Vector2(weaponIconSize, weaponIconSize);
+            weaponIconComp.preserveAspect = true;
 
             // 设置武器图标
             if (weaponSprite != null)
@@ -312,7 +321,7 @@ namespace KillFeed
                 victimTextComp.alignment = TextAlignmentOptions.Left;
             }
             victimTextComp.text = GetCharacterName(victim);
-            victimRect.sizeDelta = new Vector2(180, killFeedConfig.fontSize + 10);
+            //victimRect.sizeDelta = new Vector2(180, killFeedConfig.fontSize + 10);
 
             // 新记录放在最底部，所以偏移量是当前记录数 * 间距
             float verticalOffset = activeRecords.Count * killFeedConfig.recordsVerticalSpacing;
@@ -357,7 +366,6 @@ namespace KillFeed
                 UpdateAllRecordsPosition();
             }
         }
-
         private void SetRecordAlpha(KillFeedRecord record, float alpha)
         {
             if (record.killerText != null)
