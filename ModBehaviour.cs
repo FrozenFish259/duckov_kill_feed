@@ -35,7 +35,7 @@ namespace KillFeed
         //击杀记录从右侧滑入需要的时间
         public float slideInTime = 0.4f;
         //每条击杀记录的垂直间距
-        public float recordsVerticalSpacing = 50f;
+        public float recordsVerticalSpacing = 2f;
         ////////////////////////////////////
 
         ////////////击杀记录位置调整: 0.0 - 1.0////////////
@@ -48,9 +48,11 @@ namespace KillFeed
         //自定义显示名称
         public string myName = "";
 
+        //强制更新配置文件token
+        public string doNotEditThisTokenThisIsATokenThatForForceUpdatingConfigs = "";
+
         //武器图标配置
-        public float weaponIconSize = 24f; // 武器图标大小
-        public float weaponIconSizeRatio = 5f; // 图标大小为字体大小的相对百分比
+        public float weaponIconSize = 80f; // 武器图标大小
         public float weaponIconSpacing = 1f;     // 很小的间距，让元素靠得很近
     }
 
@@ -73,6 +75,9 @@ namespace KillFeed
 
     public class ModBehaviour : Duckov.Modding.ModBehaviour
     {
+        //强制更新config原因
+        private static string FORCE_UPDATE_TOKEN = "force_update_config_due_to_weapon_icon_update";
+
         KillFeedConfig killFeedConfig = new KillFeedConfig();
 
         private static string ConfigPath => Path.Combine(Application.streamingAssetsPath, "KillFeedModConfig.txt");
@@ -131,6 +136,14 @@ namespace KillFeed
                     string json = File.ReadAllText(ConfigPath);
                     KillFeedConfig config = JsonUtility.FromJson<KillFeedConfig>(json);
 
+                    //检查强制更新
+                    if(config.doNotEditThisTokenThisIsATokenThatForForceUpdatingConfigs != ModBehaviour.FORCE_UPDATE_TOKEN)
+                    {
+                        //需要强制更新
+                        throw new Exception("Force Update Required!");
+                    }
+                    
+
                     // 应用配置到静态变量
                     killFeedConfig = config;
                 }
@@ -146,7 +159,11 @@ namespace KillFeed
 
         private void SaveConfig(KillFeedConfig killFeedConfig)
         {
-            string json = JsonUtility.ToJson(killFeedConfig, true);
+            //记入强制更新token, 防止下一次也强制更新
+            killFeedConfig.doNotEditThisTokenThisIsATokenThatForForceUpdatingConfigs = ModBehaviour.FORCE_UPDATE_TOKEN;
+
+            string json = JsonUtility.ToJson(killFeedConfig, true); 
+
             File.WriteAllText(ConfigPath, json);
         }
 
@@ -255,21 +272,20 @@ namespace KillFeed
             // 设置水平布局
             var horizontalLayout = containerGO.AddComponent<HorizontalLayoutGroup>();
             horizontalLayout.childAlignment = TextAnchor.MiddleRight;
-            horizontalLayout.spacing = killFeedConfig.weaponIconSpacing; // 使用配置的间距
-            horizontalLayout.childControlWidth = true;  // 改为true，让布局控制宽度
-            horizontalLayout.childControlHeight = true; // 改为true，让布局控制高度
+            horizontalLayout.spacing = killFeedConfig.weaponIconSpacing;
+            horizontalLayout.childControlWidth = false;
+            horizontalLayout.childControlHeight = false;
             horizontalLayout.childForceExpandWidth = false;
             horizontalLayout.childForceExpandHeight = false;
 
             // 设置到容器中
             containerRect.SetParent(killFeedContainer);
             containerRect.localScale = Vector3.one;
-            containerRect.sizeDelta = new Vector2(500, killFeedConfig.fontSize + 10);
             containerRect.anchorMin = new Vector2(1f, 1f);
             containerRect.anchorMax = new Vector2(1f, 1f);
             containerRect.pivot = new Vector2(1f, 1f);
 
-
+            // 移除内部容器，直接在主容器中添加元素
             // 1. 创建击杀者文本
             var killerTextGO = new GameObject("KillerText");
             var killerTextComp = killerTextGO.AddComponent<TextMeshProUGUI>();
@@ -286,20 +302,17 @@ namespace KillFeed
                 killerTextComp.alignment = TextAlignmentOptions.Right;
             }
             killerTextComp.text = GetCharacterName(killer);
-            //killerRect.sizeDelta = new Vector2(180, killFeedConfig.fontSize + 10);
 
-            // 2. 创建武器图标 - 根据字体大小相对调整
+            // 2. 创建武器图标
             var weaponIconGO = new GameObject("WeaponIcon");
             var weaponIconComp = weaponIconGO.AddComponent<Image>();
             var weaponIconRect = weaponIconGO.GetComponent<RectTransform>();
             weaponIconRect.SetParent(containerRect);
 
-            // 根据字体大小计算图标大小
-            float weaponIconSize = killFeedConfig.fontSize * killFeedConfig.weaponIconSizeRatio;
+            float weaponIconSize = killFeedConfig.weaponIconSize;
             weaponIconRect.sizeDelta = new Vector2(weaponIconSize, weaponIconSize);
             weaponIconComp.preserveAspect = true;
 
-            // 设置武器图标
             if (weaponSprite != null)
             {
                 weaponIconComp.sprite = weaponSprite;
@@ -312,7 +325,6 @@ namespace KillFeed
             var victimRect = victimTextGO.GetComponent<RectTransform>();
             victimRect.SetParent(containerRect);
 
-            // 设置受害者文本样式
             if (templateText != null)
             {
                 victimTextComp.font = templateText.font;
@@ -321,7 +333,10 @@ namespace KillFeed
                 victimTextComp.alignment = TextAlignmentOptions.Left;
             }
             victimTextComp.text = GetCharacterName(victim);
-            //victimRect.sizeDelta = new Vector2(180, killFeedConfig.fontSize + 10);
+
+            // 设置容器大小 - 简化计算
+            float containerHeight = Mathf.Max(killFeedConfig.fontSize + 10, weaponIconSize);
+            containerRect.sizeDelta = new Vector2(400, containerHeight);
 
             // 新记录放在最底部，所以偏移量是当前记录数 * 间距
             float verticalOffset = activeRecords.Count * killFeedConfig.recordsVerticalSpacing;
@@ -366,6 +381,7 @@ namespace KillFeed
                 UpdateAllRecordsPosition();
             }
         }
+
         private void SetRecordAlpha(KillFeedRecord record, float alpha)
         {
             if (record.killerText != null)
@@ -386,7 +402,9 @@ namespace KillFeed
                 var record = activeRecords[i];
 
                 // 重要修复：重新计算每个记录的垂直偏移
-                float newOffset = i * killFeedConfig.recordsVerticalSpacing;
+                // 修复重叠问题：考虑容器实际高度
+                float containerHeight = Mathf.Max(killFeedConfig.fontSize + 10, killFeedConfig.weaponIconSize);
+                float newOffset = i * (containerHeight + killFeedConfig.recordsVerticalSpacing);
                 record.targetPosition = new Vector2(0f, -newOffset);
                 record.verticalOffset = newOffset;
 
