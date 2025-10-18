@@ -42,6 +42,9 @@ namespace KillFeed
         //击杀记录显示区域顶margin百分比
         public float topMarginPercent = 0.15f;
         ///////////////////////////////////////////////////
+
+        //自定义显示名称
+        public string myName = "";
     }
 
     public class KillFeedRecord
@@ -121,10 +124,8 @@ namespace KillFeed
                     // 应用配置到静态变量
                     killFeedConfig = config;
                 }
-                else
-                {
-                    SaveConfig(killFeedConfig);
-                }
+
+                SaveConfig(killFeedConfig);
             }
             catch (System.Exception e)
             {
@@ -151,7 +152,7 @@ namespace KillFeed
 
             if (canvas == null)
             {
-                //ERROR
+                //ERROR                
                 return;
             }
 
@@ -174,7 +175,7 @@ namespace KillFeed
             }
 
             CharacterMainControl characterKiller = dmgInfo.fromCharacter;
-            CharacterMainControl characterVictim = dmgInfo.toDamageReceiver?.health.TryGetCharacter();
+            CharacterMainControl characterVictim = dmgInfo.toDamageReceiver.health.TryGetCharacter();
 
             if (characterKiller == null || characterVictim == null)
             {
@@ -193,7 +194,15 @@ namespace KillFeed
         {
             if (character.IsMainCharacter)
             {
-                return "DeathReason_Self".ToPlainText();
+                if(killFeedConfig.myName == "")
+                {
+                    return "DeathReason_Self".ToPlainText();
+                }
+                else
+                {
+                    return killFeedConfig.myName;
+                }
+                
             }
             else if (character.characterPreset != null)
             {
