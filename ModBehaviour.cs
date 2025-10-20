@@ -85,7 +85,7 @@ namespace KillFeed
             ModConfigTask modConfigTask = new ModConfigTask();
             modConfigTask.mod_config_type = ModConfigType.DropDownList;
 
-            modConfigTask.key = $"{modConfigTask.mod_name}_{key}";
+            modConfigTask.key = key;
             modConfigTask.description = description;
             modConfigTask.type = type;
             modConfigTask.defaultValue = defaultValue;
@@ -98,7 +98,7 @@ namespace KillFeed
             ModConfigTask modConfigTask = new ModConfigTask();
             modConfigTask.mod_config_type = ModConfigType.BoolDropDownList;
 
-            modConfigTask.key = $"{modConfigTask.mod_name}_{key}";
+            modConfigTask.key = key;
             modConfigTask.description = description;
             modConfigTask.defaultValue = defaultValue;
 
@@ -109,7 +109,7 @@ namespace KillFeed
             ModConfigTask modConfigTask = new ModConfigTask();
             modConfigTask.mod_config_type = ModConfigType.InputWithSlider;
 
-            modConfigTask.key = $"{modConfigTask.mod_name}_{key}";
+            modConfigTask.key = key;
             modConfigTask.description = description;
             modConfigTask.type = type;
             modConfigTask.defaultValue = defaultValue;
@@ -140,6 +140,11 @@ namespace KillFeed
     {
         public static string MOD_NAME = "KillFeed";
 
+        // 添加配置更新标记
+        private bool configDirty = false;
+        private float configDirtyTime = 0f;
+        private const float CONFIG_UPDATE_DELAY = 0.5f; // 延迟0.5秒
+
         //强制更新config原因
         private static string FORCE_UPDATE_TOKEN = "force_update_config_due_to_weapon_icon_update";
 
@@ -156,7 +161,20 @@ namespace KillFeed
         private List<KillFeedRecord> activeRecords = new List<KillFeedRecord>();
         private RectTransform killFeedContainer;
 
-        private bool TryModConfig(KillFeedConfig config)
+
+        private void OnModConfigOptionsChanged(string key)
+        {
+            if (!key.StartsWith(MOD_NAME + "_"))
+                return;
+
+            // 标记配置为脏数据，记录时间戳
+            configDirty = true;
+            configDirtyTime = Time.time;
+
+            Debug.Log($"KillFeed: 配置标记为脏数据，等待应用");
+        }
+
+        private bool SetupModConfig(KillFeedConfig config)
         {
             bool initResult = ModConfigAPI.Initialize();
 
@@ -167,171 +185,89 @@ namespace KillFeed
             }
 
             //添加Action
-            ModConfigAPI.SafeAddOnOptionsChangedDelegate(this.onOptionsChanged);
+            ModConfigAPI.SafeAddOnOptionsChangedDelegate(OnModConfigOptionsChanged);
 
             List<ModConfigTask> modConfigTasks = new List<ModConfigTask>();
 
             SystemLanguage[] chineseLanguages = { SystemLanguage.Chinese, SystemLanguage.ChineseSimplified, SystemLanguage.ChineseTraditional };
-            
-            if (chineseLanguages.Contains(LocalizationManager.CurrentLanguage))
-            {
-                //Chinese
-                modConfigTasks.Insert(0, ModConfigTask.InputWithSliderTask(
-                    nameof(killFeedConfig.fontSize),
-                    "文字大小", typeof(float), killFeedConfig.fontSize,
-                    new Vector2(10f, 100f))
-                    );
 
-                modConfigTasks.Insert(0, ModConfigTask.BoolDropDownListTask(
-                    nameof(killFeedConfig.shouldDisplayNonMainPlayerKill),
-                    "显示非玩家击杀", killFeedConfig.shouldDisplayNonMainPlayerKill));
+            bool isChineseLanguage = chineseLanguages.Contains(LocalizationManager.CurrentLanguage);
 
-                modConfigTasks.Insert(0, ModConfigTask.InputWithSliderTask(
-                    nameof(killFeedConfig.maxKillFeedRecordsNum),
-                    "最大显示记录数", typeof(int), killFeedConfig.maxKillFeedRecordsNum,
-                    new Vector2(1, 20))
-                    );
+            modConfigTasks.Insert(0, ModConfigTask.InputWithSliderTask(
+                nameof(killFeedConfig.fontSize),
+                isChineseLanguage ? "文字大小" : "Font Size", typeof(float), killFeedConfig.fontSize,
+                new Vector2(10f, 100f))
+            );
 
-                modConfigTasks.Insert(0, ModConfigTask.InputWithSliderTask(
-                    nameof(killFeedConfig.fadeInTime),
-                    "淡入时间(秒)", typeof(float), killFeedConfig.fadeInTime,
-                    new Vector2(0.1f, 3f))
-                    );
+            modConfigTasks.Insert(0, ModConfigTask.BoolDropDownListTask(
+                nameof(killFeedConfig.shouldDisplayNonMainPlayerKill),
+                isChineseLanguage ? "显示非玩家击杀" : "Show Non-Player Kills", killFeedConfig.shouldDisplayNonMainPlayerKill));
 
-                modConfigTasks.Insert(0, ModConfigTask.InputWithSliderTask(
-                    nameof(killFeedConfig.fadeOutTime),
-                    "淡出时间(秒)", typeof(float), killFeedConfig.fadeOutTime,
-                    new Vector2(0.1f, 3f))
-                    );
+            modConfigTasks.Insert(0, ModConfigTask.InputWithSliderTask(
+                nameof(killFeedConfig.maxKillFeedRecordsNum),
+                isChineseLanguage ? "最大显示记录数" : "Max Display Records", typeof(int), killFeedConfig.maxKillFeedRecordsNum,
+                new Vector2(1, 20))
+            );
 
-                modConfigTasks.Insert(0, ModConfigTask.InputWithSliderTask(
-                    nameof(killFeedConfig.displayTime),
-                    "记录显示时间(秒)", typeof(float), killFeedConfig.displayTime,
-                    new Vector2(1f, 30f))
-                    );
+            modConfigTasks.Insert(0, ModConfigTask.InputWithSliderTask(
+                nameof(killFeedConfig.fadeInTime),
+                isChineseLanguage ? "淡入时间(秒)" : "FadeIn Time (s)", typeof(float), killFeedConfig.fadeInTime,
+                new Vector2(0.1f, 3f))
+            );
 
-                modConfigTasks.Insert(0, ModConfigTask.InputWithSliderTask(
-                    nameof(killFeedConfig.slideInTime),
-                    "滑入时间(秒)", typeof(float), killFeedConfig.slideInTime,
-                    new Vector2(0.1f, 3f))
-                    );
+            modConfigTasks.Insert(0, ModConfigTask.InputWithSliderTask(
+                nameof(killFeedConfig.fadeOutTime),
+                isChineseLanguage ? "淡出时间(秒)" : "FadeOut Time (s)", typeof(float), killFeedConfig.fadeOutTime,
+                new Vector2(0.1f, 3f))
+            );
 
-                modConfigTasks.Insert(0, ModConfigTask.InputWithSliderTask(
-                    nameof(killFeedConfig.recordsVerticalSpacing),
-                    "记录垂直间距", typeof(float), killFeedConfig.recordsVerticalSpacing,
-                    new Vector2(-50f, 50f))
-                    );
+            modConfigTasks.Insert(0, ModConfigTask.InputWithSliderTask(
+                nameof(killFeedConfig.displayTime),
+                isChineseLanguage ? "记录显示时间(秒)" : "Display Time (s)", typeof(float), killFeedConfig.displayTime,
+                new Vector2(1f, 30f))
+            );
 
-                modConfigTasks.Insert(0, ModConfigTask.InputWithSliderTask(
-                    nameof(killFeedConfig.rightMarginPercent),
-                    "右侧边距百分比", typeof(float), killFeedConfig.rightMarginPercent,
-                    new Vector2(0f, 0.5f))
-                    );
+            modConfigTasks.Insert(0, ModConfigTask.InputWithSliderTask(
+                nameof(killFeedConfig.slideInTime),
+                isChineseLanguage ? "滑入时间(秒)" : "Slide In Time (s)", typeof(float), killFeedConfig.slideInTime,
+                new Vector2(0.1f, 3f))
+            );
 
-                modConfigTasks.Insert(0, ModConfigTask.InputWithSliderTask(
-                    nameof(killFeedConfig.topMarginPercent),
-                    "顶部边距百分比", typeof(float), killFeedConfig.topMarginPercent,
-                    new Vector2(0f, 0.5f))
-                    );
+            modConfigTasks.Insert(0, ModConfigTask.InputWithSliderTask(
+                nameof(killFeedConfig.recordsVerticalSpacing),
+                isChineseLanguage ? "记录垂直间距" : "Records Vertical Spacing", typeof(float), killFeedConfig.recordsVerticalSpacing,
+                new Vector2(-50f, 50f))
+            );
 
-                modConfigTasks.Insert(0, ModConfigTask.InputWithSliderTask(
-                    nameof(killFeedConfig.weaponIconSize),
-                    "武器图标大小", typeof(float), killFeedConfig.weaponIconSize,
-                    new Vector2(20f, 150f))
-                    );
+            modConfigTasks.Insert(0, ModConfigTask.InputWithSliderTask(
+                nameof(killFeedConfig.rightMarginPercent),
+                isChineseLanguage ? "右侧边距百分比" : "Right Margin Percent", typeof(float), killFeedConfig.rightMarginPercent,
+                new Vector2(0f, 0.5f))
+            );
 
-                modConfigTasks.Insert(0, ModConfigTask.InputWithSliderTask(
-                    nameof(killFeedConfig.weaponIconSpacing),
-                    "武器图标间距", typeof(float), killFeedConfig.weaponIconSpacing,
-                    new Vector2(0f, 200f))
-                    );
+            modConfigTasks.Insert(0, ModConfigTask.InputWithSliderTask(
+                nameof(killFeedConfig.topMarginPercent),
+                isChineseLanguage ? "顶部边距百分比" : "Top Margin Percent", typeof(float), killFeedConfig.topMarginPercent,
+                new Vector2(0f, 0.5f))
+            );
 
-                modConfigTasks.Insert(0, ModConfigTask.InputWithSliderTask(
-                    nameof(killFeedConfig.myName),
-                    "自定义玩家名称", typeof(string), killFeedConfig.myName,
-                    null)
-                    );
+            modConfigTasks.Insert(0, ModConfigTask.InputWithSliderTask(
+                nameof(killFeedConfig.weaponIconSize),
+                isChineseLanguage ? "武器图标大小" : "Weapon Icon Size", typeof(float), killFeedConfig.weaponIconSize,
+                new Vector2(20f, 150f))
+            );
 
-            }
-            else
-            {
-                //English
-                modConfigTasks.Insert(0, ModConfigTask.InputWithSliderTask(
-                    nameof(killFeedConfig.fontSize),
-                    "Font Size", typeof(float), killFeedConfig.fontSize,
-                    new Vector2(10f, 100f))
-                    );
+            modConfigTasks.Insert(0, ModConfigTask.InputWithSliderTask(
+                nameof(killFeedConfig.weaponIconSpacing),
+                isChineseLanguage ? "武器图标间距" : "Weapon Icon Spacing", typeof(float), killFeedConfig.weaponIconSpacing,
+                new Vector2(0f, 200f))
+            );
 
-                modConfigTasks.Insert(0, ModConfigTask.BoolDropDownListTask(
-                    nameof(killFeedConfig.shouldDisplayNonMainPlayerKill),
-                    "Show Non-Player Kills", killFeedConfig.shouldDisplayNonMainPlayerKill));
-
-                modConfigTasks.Insert(0, ModConfigTask.InputWithSliderTask(
-                    nameof(killFeedConfig.maxKillFeedRecordsNum),
-                    "Max Display Records", typeof(int), killFeedConfig.maxKillFeedRecordsNum,
-                    new Vector2(1, 20))
-                    );
-
-                modConfigTasks.Insert(0, ModConfigTask.InputWithSliderTask(
-                    nameof(killFeedConfig.fadeInTime),
-                    "FadeIn Time (s)", typeof(float), killFeedConfig.fadeInTime,
-                    new Vector2(0.1f, 3f))
-                    );
-
-                modConfigTasks.Insert(0, ModConfigTask.InputWithSliderTask(
-                    nameof(killFeedConfig.fadeOutTime),
-                    "FadeOut Time (s)", typeof(float), killFeedConfig.fadeOutTime,
-                    new Vector2(0.1f, 3f))
-                    );
-
-                modConfigTasks.Insert(0, ModConfigTask.InputWithSliderTask(
-                    nameof(killFeedConfig.displayTime),
-                    "Display Time (s)", typeof(float), killFeedConfig.displayTime,
-                    new Vector2(1f, 30f))
-                    );
-
-                modConfigTasks.Insert(0, ModConfigTask.InputWithSliderTask(
-                    nameof(killFeedConfig.slideInTime),
-                    "Slide In Time (s)", typeof(float), killFeedConfig.slideInTime,
-                    new Vector2(0.1f, 3f))
-                    );
-
-                modConfigTasks.Insert(0, ModConfigTask.InputWithSliderTask(
-                    nameof(killFeedConfig.recordsVerticalSpacing),
-                    "Records Vertical Spacing", typeof(float), killFeedConfig.recordsVerticalSpacing,
-                    new Vector2(-50f, 50f))
-                    );
-
-                modConfigTasks.Insert(0, ModConfigTask.InputWithSliderTask(
-                    nameof(killFeedConfig.rightMarginPercent),
-                    "Right Margin Percent", typeof(float), killFeedConfig.rightMarginPercent,
-                    new Vector2(0f, 0.5f))
-                    );
-
-                modConfigTasks.Insert(0, ModConfigTask.InputWithSliderTask(
-                    nameof(killFeedConfig.topMarginPercent),
-                    "Top Margin Percent", typeof(float), killFeedConfig.topMarginPercent,
-                    new Vector2(0f, 0.5f))
-                    );
-
-                modConfigTasks.Insert(0, ModConfigTask.InputWithSliderTask(
-                    nameof(killFeedConfig.weaponIconSize),
-                    "Weapon Icon Size", typeof(float), killFeedConfig.weaponIconSize,
-                    new Vector2(20f, 150f))
-                    );
-
-                modConfigTasks.Insert(0, ModConfigTask.InputWithSliderTask(
-                    nameof(killFeedConfig.weaponIconSpacing),
-                    "Weapon Icon Spacing", typeof(float), killFeedConfig.weaponIconSpacing,
-                    new Vector2(0f, 200f))
-                    );
-
-                modConfigTasks.Insert(0, ModConfigTask.InputWithSliderTask(
-                    nameof(killFeedConfig.myName),
-                    "Custom Player Name", typeof(string), killFeedConfig.myName,
-                    null)
-                    );
-            }
+            modConfigTasks.Insert(0, ModConfigTask.InputWithSliderTask(
+                nameof(killFeedConfig.myName),
+                isChineseLanguage ? "自定义玩家名称" : "Custom Player Name", typeof(string), killFeedConfig.myName,
+                null)
+            );
 
             foreach (var task in modConfigTasks)
             {
@@ -364,6 +300,8 @@ namespace KillFeed
                         task.defaultValue);
                 }
             }
+
+            LoadConfigFromModConfig();
 
             return true;
         }
@@ -398,10 +336,10 @@ namespace KillFeed
 
         private void OnModActivated(ModInfo info, Duckov.Modding.ModBehaviour behaviour)
         {
-            if(info.name == ModConfigAPI.ModConfigName)
+            if (info.name == ModConfigAPI.ModConfigName)
             {
                 Debug.LogWarning("检测到ModConfig已激活!");
-                TryModConfig(killFeedConfig);
+                SetupModConfig(killFeedConfig);
             }
         }
 
@@ -409,42 +347,44 @@ namespace KillFeed
         {
             ModManager.OnModActivated += OnModActivated;
             Health.OnDead += OnDead;
+
+            // 立即检查一次，防止 ModConfig 已经加载但事件错过了
+            if (ModConfigAPI.IsAvailable())
+            {
+                Debug.Log("DisplayItemValue: ModConfig already available!");
+                SetupModConfig(killFeedConfig);
+                LoadConfigFromModConfig();
+            }
         }
 
 
         void OnDisable()
         {
-            ModConfigAPI.SafeRemoveOnOptionsChangedDelegate(this.onOptionsChanged);
+            ModConfigAPI.SafeRemoveOnOptionsChangedDelegate(OnModConfigOptionsChanged);
             ModManager.OnModActivated -= OnModActivated;
             Health.OnDead -= OnDead;
         }
 
-        void onOptionsChanged(string key)
+        void LoadConfigFromModConfig()
         {
             if (!ModConfigAPI.isInitialized)
             {
                 return;
             }
 
-            //这里需要使用OptionsManager.Load<T>(string key, T default)读取更新后的值
-            //然后更新killFeedConfig的数据
-            // 使用OptionsManager.Load<T>(string key, T default)读取更新后的值
-            killFeedConfig.fontSize = OptionsManager.Load<float>($"{MOD_NAME}_{nameof(killFeedConfig.fontSize)}", killFeedConfig.fontSize);
-            killFeedConfig.shouldDisplayNonMainPlayerKill = OptionsManager.Load<bool>($"{MOD_NAME}_{nameof(killFeedConfig.shouldDisplayNonMainPlayerKill)}", killFeedConfig.shouldDisplayNonMainPlayerKill);
-            killFeedConfig.maxKillFeedRecordsNum = OptionsManager.Load<int>($"{MOD_NAME}_{nameof(killFeedConfig.maxKillFeedRecordsNum)}", killFeedConfig.maxKillFeedRecordsNum);
-            killFeedConfig.fadeInTime = OptionsManager.Load<float>($"{MOD_NAME}_{nameof(killFeedConfig.fadeInTime)}", killFeedConfig.fadeInTime);
-            killFeedConfig.fadeOutTime = OptionsManager.Load<float>($"{MOD_NAME}_{nameof(killFeedConfig.fadeOutTime)}", killFeedConfig.fadeOutTime);
-            killFeedConfig.displayTime = OptionsManager.Load<float>($"{MOD_NAME}_{nameof(killFeedConfig.displayTime)}", killFeedConfig.displayTime);
-            killFeedConfig.slideInTime = OptionsManager.Load<float>($"{MOD_NAME}_{nameof(killFeedConfig.slideInTime)}", killFeedConfig.slideInTime);
-            killFeedConfig.recordsVerticalSpacing = OptionsManager.Load<float>($"{MOD_NAME}_{nameof(killFeedConfig.recordsVerticalSpacing)}", killFeedConfig.recordsVerticalSpacing);
-            killFeedConfig.rightMarginPercent = OptionsManager.Load<float>($"{MOD_NAME}_{nameof(killFeedConfig.rightMarginPercent)}", killFeedConfig.rightMarginPercent);
-            killFeedConfig.topMarginPercent = OptionsManager.Load<float>($"{MOD_NAME}_{nameof(killFeedConfig.topMarginPercent)}", killFeedConfig.topMarginPercent);           
-            killFeedConfig.weaponIconSize = OptionsManager.Load<float>($"{MOD_NAME}_{nameof(killFeedConfig.weaponIconSize)}", killFeedConfig.weaponIconSize);
-            
-            killFeedConfig.weaponIconSpacing = OptionsManager.Load<float>($"{MOD_NAME}_{nameof(killFeedConfig.weaponIconSpacing)}", killFeedConfig.weaponIconSpacing);
-            
-            killFeedConfig.myName = OptionsManager.Load<string>($"{MOD_NAME}_{nameof(killFeedConfig.myName)}", killFeedConfig.myName);
-
+            killFeedConfig.fontSize = ModConfigAPI.SafeLoad<float>(MOD_NAME, "fontSize", killFeedConfig.fontSize);
+            killFeedConfig.shouldDisplayNonMainPlayerKill = ModConfigAPI.SafeLoad<bool>(MOD_NAME, "shouldDisplayNonMainPlayerKill", killFeedConfig.shouldDisplayNonMainPlayerKill);
+            killFeedConfig.maxKillFeedRecordsNum = ModConfigAPI.SafeLoad<int>(MOD_NAME, "maxKillFeedRecordsNum", killFeedConfig.maxKillFeedRecordsNum);
+            killFeedConfig.fadeInTime = ModConfigAPI.SafeLoad<float>(MOD_NAME, "fadeInTime", killFeedConfig.fadeInTime);
+            killFeedConfig.fadeOutTime = ModConfigAPI.SafeLoad<float>(MOD_NAME, "fadeOutTime", killFeedConfig.fadeOutTime);
+            killFeedConfig.displayTime = ModConfigAPI.SafeLoad<float>(MOD_NAME, "displayTime", killFeedConfig.displayTime);
+            killFeedConfig.slideInTime = ModConfigAPI.SafeLoad<float>(MOD_NAME, "slideInTime", killFeedConfig.slideInTime);
+            killFeedConfig.recordsVerticalSpacing = ModConfigAPI.SafeLoad<float>(MOD_NAME, "recordsVerticalSpacing", killFeedConfig.recordsVerticalSpacing);
+            killFeedConfig.rightMarginPercent = ModConfigAPI.SafeLoad<float>(MOD_NAME, "rightMarginPercent", killFeedConfig.rightMarginPercent);
+            killFeedConfig.topMarginPercent = ModConfigAPI.SafeLoad<float>(MOD_NAME, "topMarginPercent", killFeedConfig.topMarginPercent);
+            killFeedConfig.weaponIconSize = ModConfigAPI.SafeLoad<float>(MOD_NAME, "weaponIconSize", killFeedConfig.weaponIconSize);
+            killFeedConfig.weaponIconSpacing = ModConfigAPI.SafeLoad<float>(MOD_NAME, "weaponIconSpacing", killFeedConfig.weaponIconSpacing);
+            killFeedConfig.myName = ModConfigAPI.SafeLoad<string>(MOD_NAME, "myName", killFeedConfig.myName);
             // 更新UI位置和样式
             if (killFeedContainer != null)
             {
@@ -472,7 +412,6 @@ namespace KillFeed
 
             // 更新所有记录的位置
             UpdateAllRecordsPosition();
-            
         }
 
         private void TryLoadingConfig()
@@ -485,11 +424,11 @@ namespace KillFeed
                     KillFeedConfig config = JsonUtility.FromJson<KillFeedConfig>(json);
 
                     //检查强制更新
-                    if(config.doNotEditThisTokenThisIsATokenThatForForceUpdatingConfigs != ModBehaviour.FORCE_UPDATE_TOKEN)
+                    if (config.doNotEditThisTokenThisIsATokenThatForForceUpdatingConfigs != ModBehaviour.FORCE_UPDATE_TOKEN)
                     {
                         //需要强制更新
                         throw new Exception("Force Update Required!");
-                    }                    
+                    }
 
                     // 应用配置到静态变量
                     killFeedConfig = config;
@@ -509,7 +448,7 @@ namespace KillFeed
             //记入强制更新token, 防止下一次也强制更新
             killFeedConfig.doNotEditThisTokenThisIsATokenThatForForceUpdatingConfigs = ModBehaviour.FORCE_UPDATE_TOKEN;
 
-            string json = JsonUtility.ToJson(killFeedConfig, true); 
+            string json = JsonUtility.ToJson(killFeedConfig, true);
 
             File.WriteAllText(persistentConfigPath, json);
         }
@@ -780,10 +719,30 @@ namespace KillFeed
 
         private void Update()
         {
+            // 处理脏配置更新
+            HandleDirtyConfig();
+
             // 优化: 只在有活动记录时才执行动画更新
             if (activeRecords.Count > 0)
             {
                 UpdateRecordsAnimation();
+            }
+        }
+
+        private void HandleDirtyConfig()
+        {
+            if (configDirty && Time.time - configDirtyTime >= CONFIG_UPDATE_DELAY)
+            {
+                // 清除脏标记
+                configDirty = false;
+
+                // 应用配置变更
+                LoadConfigFromModConfig();
+
+                // 保存到本地配置文件（如果需要）
+                // SaveConfig(killFeedConfig);
+
+                Debug.Log("KillFeed: 脏配置已应用并清除标记");
             }
         }
 
