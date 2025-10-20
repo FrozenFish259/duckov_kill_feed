@@ -2,9 +2,12 @@
 > `KillFeed`是一个为游戏添加实时击杀信息显示功能的模组。  
 > 当游戏中发生击杀事件时，模组会在屏幕右上角显示击杀者和被击杀者信息以及击杀所用的武器图标。
 
-### 配置文件位置
+## 配置文件位置
+订阅ModConfig模组后, 可以在游戏内通过设置打开Mod设置菜单, 非常方便  
+如果未检测到ModConfig模组, KillFeed会尝试从下面路径读取配置  
 >..\Escape from Duckov\Duckov_Data\StreamingAssets\KillFeedModConfig.txt
-### 基本设置
+
+## 基本设置
 `fontSize`: 击杀信息字体大小
 
 `shouldDisplayNonMainPlayerKill`: 是否显示非玩家击杀记录（true=显示所有击杀，false=只显示玩家击杀）
@@ -15,7 +18,7 @@
 
 `weaponIconSpacing`: 武器图标和文字间距
 
-### 视觉效果配置
+## 视觉效果配置
 `fadeInTime`: 淡入时间（秒）
 
 `fadeOutTime`: 淡出时间（秒）
@@ -26,7 +29,7 @@
 
 `recordsVerticalSpacing`: 每条击杀记录之间的垂直间距
 
-### 位置调整
+## 位置调整
 `rightMarginPercent`: 击杀记录显示区域距离屏幕右边的百分比
 
 `topMarginPercent`: 击杀记录显示区域距离屏幕顶部的百分比
@@ -45,8 +48,8 @@
 >When kill events occur in the game, the mod displays kill information in the top-right corner of the screen
 
 ## Configuration File Location
-The config file is located in the game's `StreamingAssets` folder:
-
+The config file is located in the game's `StreamingAssets` folder  
+KillFeed will try loading this config if ModConfig not found
 >..\Escape from Duckov\Duckov_Data\StreamingAssets\KillFeedModConfig.txt
 
 ## Basic Settings

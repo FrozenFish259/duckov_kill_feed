@@ -314,7 +314,7 @@ namespace KillFeed
             Debug.Log("KillFeed Mod Awake!!!");
 
             //备用config方案
-            TryLoadingConfig();
+            TryLoadingLocalConfig();
 
             CreateKillFeedUI();
         }
@@ -416,7 +416,7 @@ namespace KillFeed
             UpdateAllRecordsPosition();
         }
 
-        private void TryLoadingConfig()
+        private void TryLoadingLocalConfig()
         {
             try
             {
