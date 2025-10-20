@@ -203,8 +203,8 @@ namespace KillFeed
 
                 modConfigTasks.Insert(0, ModConfigTask.InputWithSliderTask(
                     nameof(killFeedConfig.displayTime),
-                    "显示时间(秒)", typeof(float), killFeedConfig.displayTime,
-                    new Vector2(1f, 15f))
+                    "记录显示时间(秒)", typeof(float), killFeedConfig.displayTime,
+                    new Vector2(1f, 30f))
                     );
 
                 modConfigTasks.Insert(0, ModConfigTask.InputWithSliderTask(
@@ -216,7 +216,7 @@ namespace KillFeed
                 modConfigTasks.Insert(0, ModConfigTask.InputWithSliderTask(
                     nameof(killFeedConfig.recordsVerticalSpacing),
                     "记录垂直间距", typeof(float), killFeedConfig.recordsVerticalSpacing,
-                    new Vector2(0f, 20f))
+                    new Vector2(-50f, 50f))
                     );
 
                 modConfigTasks.Insert(0, ModConfigTask.InputWithSliderTask(
@@ -240,7 +240,7 @@ namespace KillFeed
                 modConfigTasks.Insert(0, ModConfigTask.InputWithSliderTask(
                     nameof(killFeedConfig.weaponIconSpacing),
                     "武器图标间距", typeof(float), killFeedConfig.weaponIconSpacing,
-                    new Vector2(0f, 20f))
+                    new Vector2(0f, 200f))
                     );
 
                 modConfigTasks.Insert(0, ModConfigTask.InputWithSliderTask(
@@ -284,7 +284,7 @@ namespace KillFeed
                 modConfigTasks.Insert(0, ModConfigTask.InputWithSliderTask(
                     nameof(killFeedConfig.displayTime),
                     "Display Time (s)", typeof(float), killFeedConfig.displayTime,
-                    new Vector2(1f, 15f))
+                    new Vector2(1f, 30f))
                     );
 
                 modConfigTasks.Insert(0, ModConfigTask.InputWithSliderTask(
@@ -296,7 +296,7 @@ namespace KillFeed
                 modConfigTasks.Insert(0, ModConfigTask.InputWithSliderTask(
                     nameof(killFeedConfig.recordsVerticalSpacing),
                     "Records Vertical Spacing", typeof(float), killFeedConfig.recordsVerticalSpacing,
-                    new Vector2(0f, 20f))
+                    new Vector2(-50f, 50f))
                     );
 
                 modConfigTasks.Insert(0, ModConfigTask.InputWithSliderTask(
@@ -320,7 +320,7 @@ namespace KillFeed
                 modConfigTasks.Insert(0, ModConfigTask.InputWithSliderTask(
                     nameof(killFeedConfig.weaponIconSpacing),
                     "Weapon Icon Spacing", typeof(float), killFeedConfig.weaponIconSpacing,
-                    new Vector2(0f, 20f))
+                    new Vector2(0f, 200f))
                     );
 
                 modConfigTasks.Insert(0, ModConfigTask.InputWithSliderTask(
@@ -436,9 +436,11 @@ namespace KillFeed
             killFeedConfig.slideInTime = OptionsManager.Load<float>($"{MOD_NAME}_{nameof(killFeedConfig.slideInTime)}", killFeedConfig.slideInTime);
             killFeedConfig.recordsVerticalSpacing = OptionsManager.Load<float>($"{MOD_NAME}_{nameof(killFeedConfig.recordsVerticalSpacing)}", killFeedConfig.recordsVerticalSpacing);
             killFeedConfig.rightMarginPercent = OptionsManager.Load<float>($"{MOD_NAME}_{nameof(killFeedConfig.rightMarginPercent)}", killFeedConfig.rightMarginPercent);
-            killFeedConfig.topMarginPercent = OptionsManager.Load<float>($"{MOD_NAME}_{nameof(killFeedConfig.topMarginPercent)}", killFeedConfig.topMarginPercent);
+            killFeedConfig.topMarginPercent = OptionsManager.Load<float>($"{MOD_NAME}_{nameof(killFeedConfig.topMarginPercent)}", killFeedConfig.topMarginPercent);           
             killFeedConfig.weaponIconSize = OptionsManager.Load<float>($"{MOD_NAME}_{nameof(killFeedConfig.weaponIconSize)}", killFeedConfig.weaponIconSize);
+            
             killFeedConfig.weaponIconSpacing = OptionsManager.Load<float>($"{MOD_NAME}_{nameof(killFeedConfig.weaponIconSpacing)}", killFeedConfig.weaponIconSpacing);
+            
             killFeedConfig.myName = OptionsManager.Load<string>($"{MOD_NAME}_{nameof(killFeedConfig.myName)}", killFeedConfig.myName);
 
             // 更新UI位置和样式
@@ -615,11 +617,11 @@ namespace KillFeed
             // 设置水平布局
             var horizontalLayout = containerGO.AddComponent<HorizontalLayoutGroup>();
             horizontalLayout.childAlignment = TextAnchor.MiddleRight;
-            horizontalLayout.spacing = killFeedConfig.weaponIconSpacing;
             horizontalLayout.childControlWidth = false;
             horizontalLayout.childControlHeight = false;
             horizontalLayout.childForceExpandWidth = false;
             horizontalLayout.childForceExpandHeight = false;
+            horizontalLayout.spacing = killFeedConfig.weaponIconSpacing;
 
             // 设置到容器中
             containerRect.SetParent(killFeedContainer);
