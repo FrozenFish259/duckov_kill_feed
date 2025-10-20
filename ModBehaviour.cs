@@ -184,6 +184,8 @@ namespace KillFeed
                 return false;
             }
 
+            Debug.LogWarning("KillFeed已加载ModConfig");
+
             //添加Action
             ModConfigAPI.SafeAddOnOptionsChangedDelegate(OnModConfigOptionsChanged);
 
