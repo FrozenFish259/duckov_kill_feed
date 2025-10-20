@@ -166,6 +166,9 @@ namespace KillFeed
                 return false;
             }
 
+            //添加Action
+            ModConfigAPI.SafeAddOnOptionsChangedDelegate(this.onOptionsChanged);
+
             List<ModConfigTask> modConfigTasks = new List<ModConfigTask>();
 
             SystemLanguage[] chineseLanguages = { SystemLanguage.Chinese, SystemLanguage.ChineseSimplified, SystemLanguage.ChineseTraditional };
@@ -397,14 +400,13 @@ namespace KillFeed
         {
             if(info.name == ModConfigAPI.ModConfigName)
             {
-                Debug.Log("检测到ModConfig已激活!");
+                Debug.LogWarning("检测到ModConfig已激活!");
                 TryModConfig(killFeedConfig);
             }
         }
 
         void OnEnable()
         {
-            OptionsManager.OnOptionsChanged += onOptionsChanged;
             ModManager.OnModActivated += OnModActivated;
             Health.OnDead += OnDead;
         }
@@ -412,7 +414,7 @@ namespace KillFeed
 
         void OnDisable()
         {
-            OptionsManager.OnOptionsChanged -= onOptionsChanged;
+            ModConfigAPI.SafeRemoveOnOptionsChangedDelegate(this.onOptionsChanged);
             ModManager.OnModActivated -= OnModActivated;
             Health.OnDead -= OnDead;
         }
