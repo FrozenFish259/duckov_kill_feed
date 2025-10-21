@@ -3,6 +3,7 @@
 > 当游戏中发生击杀事件时，模组会在屏幕右上角显示击杀者和被击杀者信息以及击杀所用的武器图标。
 
 ## 配置文件位置
+本mod已支持ModConfig  
 订阅ModConfig模组后, 可以在游戏内通过设置打开Mod设置菜单, 非常方便  
 如果未检测到ModConfig模组, KillFeed会尝试从下面路径读取配置  
 >..\Escape from Duckov\Duckov_Data\StreamingAssets\KillFeedModConfig.txt
@@ -48,7 +49,7 @@
 >When kill events occur in the game, the mod displays kill information in the top-right corner of the screen
 
 ## Configuration File Location
-The config file is located in the game's `StreamingAssets` folder  
+ModConfig is supported, it allows you to change mod settings in-game  
 KillFeed will try loading this config if ModConfig not found
 >..\Escape from Duckov\Duckov_Data\StreamingAssets\KillFeedModConfig.txt
 

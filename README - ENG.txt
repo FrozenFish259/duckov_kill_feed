@@ -5,7 +5,7 @@ When kill events occur in the game, the mod displays kill information in the top
 [/quote]
 
 [h2]Configuration File Location[/h2]
-
+ModConfig is supported, it allows you to change mod settings in-game  
 You can change mod settings in game's settings menu if ModConfig is installed
 [img]https://images.steamusercontent.com/ugc/15131859468956989520/312BF0894E2D05D3636E6F038F2B45886FE775F0/?imw=5000&imh=5000&ima=fit&impolicy=Letterbox&imcolor=%23000000&letterbox=false[/img]
 The config file is located in the game's [i]StreamingAssets[/i] folder

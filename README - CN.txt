@@ -5,7 +5,7 @@
 [/quote]
 
 [h2]配置文件位置[/h2]
-
+本mod已支持ModConfig  
 订阅ModConfig模组后, 可以在游戏内通过设置打开Mod设置菜单, 非常方便
 [img]https://images.steamusercontent.com/ugc/15131859468956989520/312BF0894E2D05D3636E6F038F2B45886FE775F0/?imw=5000&imh=5000&ima=fit&impolicy=Letterbox&imcolor=%23000000&letterbox=false[/img]
 
