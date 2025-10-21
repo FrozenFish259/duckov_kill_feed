@@ -1,6 +1,4 @@
 ﻿using Duckov.Modding;
-using Duckov.Options;
-using Duckov.UI;
 using Duckov.Utilities;
 using ItemStatsSystem;
 using SodaCraft.Localizations;
@@ -8,13 +6,11 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using TMPro;
 using UnityEngine;
-using UnityEngine.ProBuilder.Shapes;
-using UnityEngine.TextCore.Text;
 using UnityEngine.UI;
 using Sprite = UnityEngine.Sprite;
+
 
 namespace KillFeed
 {
