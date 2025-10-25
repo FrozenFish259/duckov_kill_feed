@@ -1,4 +1,5 @@
-﻿using Duckov.Modding;
+﻿using Duckov.MiniMaps;
+using Duckov.Modding;
 using Duckov.Utilities;
 using ItemStatsSystem;
 using SodaCraft.Localizations;
@@ -135,6 +136,20 @@ namespace KillFeed
     public class ModBehaviour : Duckov.Modding.ModBehaviour
     {
         public static string MOD_NAME = "KillFeed";
+
+        private Sprite? _defaultIcon = null;
+        private Sprite DefaultIcon
+        {
+            get
+            {
+                if (_defaultIcon == null)
+                {
+                    _defaultIcon = MapMarkerManager.Icons.Find((Sprite e) => e != null && e.name == "swords");
+                }
+
+                return _defaultIcon;                
+            }
+        }
 
         // 添加配置更新标记
         private bool configDirty = false;
@@ -499,7 +514,9 @@ namespace KillFeed
             }
 
             //获取击杀用的武器图标
-            Sprite weaponSprite = null;
+
+            Sprite weaponSprite = DefaultIcon;
+            Debug.Log($"[KillFeed] dmgInfo.fromWeaponItemID = {dmgInfo.fromWeaponItemID}");
             Item itemKilledWith = ItemAssetsCollection.GetPrefab(dmgInfo.fromWeaponItemID);
             if (itemKilledWith != null)
             {
